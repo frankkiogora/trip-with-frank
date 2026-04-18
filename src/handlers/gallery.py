@@ -4,18 +4,42 @@ from src.utils.response import build_response
 
 
 def lambda_handler(event, context):
-    path = event['resource']
-    method = event['httpMethod']
+    print("EVENT:", json.dumps(event))
 
+    path = event.get("resource")
+    method = event.get("httpMethod")
+
+    # POST /upload-url
     if path == "/upload-url" and method == "POST":
-        body = json.loads(event['body'])
-        file_name = body.get("fileName")
+        try:
+            body = event.get("body")
 
-        url = generate_upload_url(file_name)
-        return build_response(200, {"uploadUrl": url})
+            if isinstance(body, str):
+                body = json.loads(body)
+            elif body is None:
+                body = {}
 
+            file_name = body.get("fileName")
+
+            if not file_name:
+                return build_response(400, {"message": "fileName is required"})
+
+            url = generate_upload_url(file_name)
+
+            return build_response(200, {"uploadUrl": url})
+
+        except Exception as e:
+            print("ERROR generating upload URL:", str(e))
+            return build_response(500, {"message": "Internal server error"})
+
+    # GET /files
     elif path == "/files" and method == "GET":
-        files = list_files()
-        return build_response(200, {"files": files})
+        try:
+            files = list_files()
+            return build_response(200, {"files": files})
+
+        except Exception as e:
+            print("ERROR listing files:", str(e))
+            return build_response(500, {"message": "Internal server error"})
 
     return build_response(400, {"message": "Invalid request"})
