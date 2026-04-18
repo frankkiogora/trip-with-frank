@@ -15,7 +15,6 @@
       --bg1: #0f172a;
       --bg2: #1e293b;
       --accent: #38bdf8;
-      --accent2: #f59e0b;
       --card: rgba(255, 255, 255, 0.12);
       --border: rgba(255, 255, 255, 0.18);
       --text: #f8fafc;
@@ -217,6 +216,7 @@
       border-radius: 20px;
       color: var(--muted);
       box-shadow: var(--shadow);
+      grid-column: 1 / -1;
     }
 
     .footer-note {
@@ -298,6 +298,10 @@
 
       try {
         const res = await fetch(`${API}/files`);
+        if (!res.ok) {
+          throw new Error(`Failed to load files: ${res.status}`);
+        }
+
         const data = await res.json();
 
         if (!data.files || data.files.length === 0) {
@@ -312,6 +316,11 @@
 
         for (const file of data.files) {
           const viewRes = await fetch(`${API}/file/${encodeURIComponent(file)}`);
+          if (!viewRes.ok) {
+            console.error(`Failed to get view URL for ${file}`);
+            continue;
+          }
+
           const viewData = await viewRes.json();
 
           const card = document.createElement("div");
@@ -354,20 +363,37 @@
         uploadBtn.disabled = true;
         setStatus("Preparing secure upload...");
 
-        const res = await fetch(`${API}/upload-url`, {
+        const presignRes = await fetch(`${API}/upload-url`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fileName: file.name })
         });
 
-        const data = await res.json();
+        if (!presignRes.ok) {
+          throw new Error(`Failed to get upload URL: ${presignRes.status}`);
+        }
+
+        const presignData = await presignRes.json();
+
+        if (!presignData.uploadUrl) {
+          throw new Error("Upload URL was not returned by the API.");
+        }
 
         setStatus("Uploading memory...");
 
-        await fetch(data.uploadUrl, {
+        const uploadRes = await fetch(presignData.uploadUrl, {
           method: "PUT",
+          headers: {
+            "Content-Type": file.type || "application/octet-stream"
+          },
           body: file
         });
+
+        if (!uploadRes.ok) {
+          const errorText = await uploadRes.text();
+          console.error("S3 upload failed:", errorText);
+          throw new Error(`Upload failed with status ${uploadRes.status}`);
+        }
 
         setStatus("Upload complete ✨");
         fileInput.value = "";
@@ -375,7 +401,7 @@
         await loadGallery();
       } catch (error) {
         console.error(error);
-        setStatus("Upload failed. Please try again.");
+        setStatus(`Upload failed: ${error.message}`);
       } finally {
         uploadBtn.disabled = false;
       }
