@@ -13,6 +13,3 @@ def generate_upload_url(file_name):
     )
 
 
-def list_files():
-    response = s3.list_objects_v2(Bucket=BUCKET)
-    return [obj['Key'] for obj in response.get('Contents', [])]
