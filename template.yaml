@@ -33,10 +33,17 @@ Resources:
           Properties:
             Path: /upload-url
             Method: post
+
         ListFiles:
           Type: Api
           Properties:
             Path: /files
+            Method: get
+
+        GetFile:
+          Type: Api
+          Properties:
+            Path: /file/{key}
             Method: get
 
 Outputs:
