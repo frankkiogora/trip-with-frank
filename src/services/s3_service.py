@@ -16,6 +16,17 @@ def generate_upload_url(file_name):
     )
 
 
+def generate_view_url(file_name):
+    return s3.generate_presigned_url(
+        'get_object',
+        Params={
+            'Bucket': BUCKET,
+            'Key': file_name
+        },
+        ExpiresIn=300
+    )
+
+
 def list_files():
     response = s3.list_objects_v2(Bucket=BUCKET)
     return [obj['Key'] for obj in response.get('Contents', [])]
