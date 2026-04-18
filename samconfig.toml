@@ -1,0 +1,12 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "trip-with-frank"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-kaiwkwg1bbyl"
+s3_prefix = "trip-with-frank"
+region = "us-west-2"
+profile = "franklin"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

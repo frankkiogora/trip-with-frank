@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TripWithFrank serverless photo gallery backend
+
+Resources:
+  TripWithFrankBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub trip-with-frank-${AWS::AccountId}
+
+  TripWithFrankFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src/handlers/gallery.lambda_handler
+      Runtime: python3.11
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref TripWithFrankBucket
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:ListBucket
+              Resource:
+                - !GetAtt TripWithFrankBucket.Arn
+                - !Sub "${TripWithFrankBucket.Arn}/*"
+      Events:
+        UploadUrl:
+          Type: Api
+          Properties:
+            Path: /upload-url
+            Method: post
+        ListFiles:
+          Type: Api
+          Properties:
+            Path: /files
+            Method: get
+
+Outputs:
+  ApiBaseUrl:
+    Description: API Gateway endpoint URL for TripWithFrank
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  TripWithFrankFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt TripWithFrankFunction.Arn
+
+  TripWithFrankBucketName:
+    Description: S3 bucket for TripWithFrank photos
+    Value: !Ref TripWithFrankBucket
